@@ -1,0 +1,741 @@
+1.la orden de compra mas cara 
+[
+  {
+    $addFields: {
+      total: {
+        $multiply: ["$UnitPrice", "$Quantity"],
+      },
+    },
+  },
+  {
+    $addFields:
+      /**
+       * newField: The new field name.
+       * expression: The new field expression.
+       */
+      {
+        des: {
+          $multiply: ["$total", "$Discount"],
+        },
+      },
+  },
+  {
+    $addFields: {
+      TOTAL: {
+        $subtract: ["$total", "$des"],
+      },
+    },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        TOTAL: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+  {
+    $project:
+      /**
+       * specifications: The fields to
+       *   include or exclude.
+       */
+      {
+        OrderID: "$OrderID",
+        Total_venta: "$TOTAL",
+      },
+  },
+]
+
+
+OrderID
+10417
+Total_venta
+10540
+
+2.region con mas empleados 
+
+[
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "EmployeeTerritories",
+        localField: "EmployeeID",
+        foreignField: "EmployeeID",
+        as: "Empleado",
+      },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$Empleado",
+      },
+  },
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$Empleado.EmployeeID",
+        empleados: {
+          $sum: 1,
+        },
+        teritorio: {
+          $first: "$Empleado.TerritoryID",
+        },
+      },
+  },
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "Territories",
+        localField: "teritorio",
+        foreignField: "TerritoryID",
+        as: "t",
+      },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$t",
+      },
+  },
+  {
+    $lookup: {
+      from: "Region",
+      localField: "t.RegionID",
+      foreignField: "RegionID",
+      as: "r",
+    },
+  },
+  {
+    $unwind: {
+      path: "$r",
+    },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        empleados: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+  {
+    $project: {
+      empleados: "$empleados",
+      region: "$r.RegionDescription",
+    },
+  },
+]
+
+
+_id
+7
+empleados
+10
+region
+"Western"
+
+3.cuantos productos tengo 
+[
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: null,
+        Total_stock: {
+          $sum: "$UnitsInStock",
+        },
+      },
+  },
+]
+
+_id
+null
+Total_stock
+3119
+
+
+4.cual es producto menos vendidio 
+
+[
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$ProductID",
+        total: {
+          $sum: "$Quantity",
+        },
+      },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        total: 1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "Products",
+        localField: "_id",
+        foreignField: "ProductID",
+        as: "product",
+      },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$product",
+      },
+  },
+  {
+    $project:
+      /**
+       * specifications: The fields to
+       *   include or exclude.
+       */
+      {
+        _id: 0,
+        NombreProducto: "$product.ProductName",
+        total: 1,
+      },
+  },
+]
+
+total
+36
+NombreProducto
+"Mishi Kobe Niku"
+
+
+5.empleado con mayor venta
+
+[
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$OrderID",
+        Total: {
+          $sum: {
+            $multiply: [
+              "$Quantity",
+              "$UnitPrice",
+              {
+                $subtract: [1, "$Discount"],
+              },
+            ],
+          },
+        },
+      },
+  },
+  {
+    $lookup: {
+      from: "Orders",
+      localField: "_id",
+      foreignField: "OrderID",
+      as: "Orden",
+    },
+  },
+  {
+    $unwind: {
+      path: "$Orden",
+    },
+  },
+  {
+    $lookup: {
+      from: "Employees",
+      localField: "Orden.EmployeeID",
+      foreignField: "EmployeeID",
+      as: "Empleado",
+    },
+  },
+  {
+    $unwind: {
+      path: "$Empleado",
+    },
+  },
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$Empleado.EmployeeID",
+        totalVentas: {
+          $sum: "$Total",
+        },
+        employeeName: {
+          $first: "$Empleado.FirstName",
+        },
+      },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        totalVentas: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+]
+
+
+
+_id
+4
+totalVentas
+123750.404802038
+employeeName
+"Margaret
+
+6 emplado con mayor numero de productos vendidio 
+[
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$OrderID",
+        Total: {
+          $sum: "$Quantity",
+        },
+      },
+  },
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "Orders",
+        localField: "_id",
+        foreignField: "OrderID",
+        as: "Orders",
+      },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$Orders",
+      },
+  },
+  {
+    $lookup: {
+      from: "Employees",
+      localField: "Orders.EmployeeID",
+      foreignField: "EmployeeID",
+      as: "Empleados",
+    },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$Empleados",
+      },
+  },
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$Empleados.EmployeeID",
+        Totalproductos: {
+          $sum: "$Total",
+        },
+        employeeName: {
+          $first: "$Empleados.FirstName",
+        },
+      },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        Totalproductos: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+]
+
+
+_id
+4
+Totalproductos
+5301
+employeeName
+"Margaret"
+
+7. cliente que compro mas producto 
+[
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$OrderID",
+        productos: {
+          $sum: "$Quantity",
+        },
+      },
+  },
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "Orders",
+        localField: "_id",
+        foreignField: "OrderID",
+        as: "Orden",
+      },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$Orden",
+      },
+  },
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "Customers",
+        localField: "Orden.CustomerID",
+        foreignField: "CustomerID",
+        as: "Cliente",
+      },
+  },
+  {
+    $unwind:
+      /**
+       * path: Path to the array field.
+       * includeArrayIndex: Optional name for index.
+       * preserveNullAndEmptyArrays: Optional
+       *   toggle to unwind null and empty values.
+       */
+      {
+        path: "$Cliente",
+      },
+  },
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$Cliente.CustomerID",
+        totalProductos: {
+          $sum: "$productos",
+        },
+        nombreCliente: {
+          $first: "$Cliente.ContactName",
+        },
+      },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        totalProductos: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+]
+
+_id
+"QUICK"
+totalProductos
+1951
+nombreCliente
+"Horst Kloss"
+
+8 de que categoria tengo mas producto
+[
+  {
+    $lookup:
+      /**
+       * from: The target collection.
+       * localField: The local join field.
+       * foreignField: The target join field.
+       * as: The name for the results.
+       * pipeline: Optional pipeline to run on the foreign collection.
+       * let: Optional variables to use in the pipeline field stages.
+       */
+      {
+        from: "Categories",
+        localField: "CategoryID",
+        foreignField: "CategoryID",
+        as: "Categoria",
+      },
+  },
+  {
+    $unwind: {
+      path: "$Categoria",
+    },
+  },
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: "$ProductID",
+        productos: {
+          $sum: "$UnitsInStock",
+        },
+        categoria: {
+          $first: "$Categoria.CategoryName",
+        },
+      },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        productos: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+]
+
+_id
+75
+productos
+125
+categoria
+"Beverages"
+
+9. cuantas caegorias tengo 
+[
+  {
+    $group:
+      /**
+       * _id: The id of the group.
+       * fieldN: The first field name.
+       */
+      {
+        _id: null,
+        Total_Categorias: {
+          $sum: 1,
+        },
+      },
+  },
+]
+
+
+_id
+null
+Total_Categorias
+8
+
+10 de que provedor tengo mas producto 
+
+[
+  {
+    $lookup: {
+      from: "Suppliers",
+      localField: "SupplierID",
+      foreignField: "SupplierID",
+      as: "provedor",
+    },
+  },
+  {
+    $unwind: {
+      path: "$provedor",
+    },
+  },
+  {
+    $group: {
+      _id: "$provedor.SupplierID",
+      Total_productos: {
+        $sum: "$UnitsInStock",
+      },
+      Nombre: {
+        $first: "$provedor.CompanyName",
+      },
+    },
+  },
+  {
+    $sort:
+      /**
+       * Provide any number of field/order pairs.
+       */
+      {
+        Total_productos: -1,
+      },
+  },
+  {
+    $limit:
+      /**
+       * Provide the number of documents to limit.
+       */
+      1,
+  },
+]
+
+_id
+17
+Total_productos
+224
+Nombre
+"Svensk Sj�f�da AB"
