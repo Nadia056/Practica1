@@ -24,8 +24,8 @@ class VuePersonaController extends Controller
      
       
         $request->validate([
-            'nombre' => 'required|min:5',
-            'apellido' => 'required|max:100',
+            'nombre' => 'required',
+            'apellido' => 'required',
             'email' => 'required',
             'bike_id'=>'required'
         ]);

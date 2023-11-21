@@ -57,19 +57,13 @@ Route::get('/personas/{id}',[PersonaController::class,'deletePerson'])->name('de
 Route::get('/form', [VueBikeController::class, 'edit']);
 Route::get('/edit/{id}', [VueBikeController::class, 'edit'])->name('edit');
 
-
-
-
-
-
-
 Route::get('/bikes', [VueBikeController::class, 'index']);
 Route::post('/bikes', [VueBikeController::class, 'store']);
 
 
 Route::get('/infobike',[VueBikeController::class,'info']);
 Route::put('/infobike', [VueBikeController::class, 'update']);
-Route::delete('/infobike/{id}',[VueBikeController::class,'delete'])->middleware('verifiedID');
+Route::delete('/infobike/{id}',[VueBikeController::class,'delete']);
 
 
 Route::get('/registroPersona', [VuePersonaController::class, 'index']);
@@ -77,7 +71,7 @@ Route::post('/registroPersona', [VuePersonaController::class, 'add']);
 
 Route::get('/infopersona',[VuePersonaController::class,'info']);
 Route::put('/infopersona',[VuePersonaController::class,'update']);
-Route::delete('/infopersona/{id}',[VuePersonaController::class,'delete'])->middleware('verifiedID');
+Route::delete('/infopersona/{id}',[VuePersonaController::class,'delete']);
 
 //Route::post('/form',[ VueBikeController::class,'store']);
 
